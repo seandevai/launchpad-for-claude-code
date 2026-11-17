@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'">
+<link rel="icon" href="assets/icon.svg">
+<title>Launchpad for Claude Code</title>
+<style>
+:root{
+  --bg:#0c0c0f; --panel:#131317; --panel2:#18181d; --line:#23232a; --line2:#2e2e37;
+  --text:#ececf1; --muted:#8c8c98; --dim:#5f5f6a;
+  --accent:#e8845c; --accent2:#f2a77f; --accent-bg:rgba(232,132,92,.12);
+  --blue:#7aa7ff; --blue-bg:rgba(122,167,255,.12); --green:#5fd39a; --green-bg:rgba(95,211,154,.12);
+  --yellow:#f0c35a; --red:#ff6b6b;
+  --r:14px; --r2:10px;
+  --font:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  --display:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --mono:"Cascadia Code","Cascadia Mono",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font:14px/1.45 var(--font);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+input{font:inherit;color:inherit}
+::-webkit-scrollbar{width:10px}::-webkit-scrollbar-thumb{background:#26262e;border-radius:10px;border:3px solid var(--bg)}
+svg{display:block}
+.app{display:grid;grid-template-columns:236px 1fr;height:100vh}
+
+/* sidebar */
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;gap:6px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px}
+.logo{width:32px;height:32px;filter:drop-shadow(0 6px 14px rgba(233,103,63,.3))}
+.brand b{font:600 15px var(--display);letter-spacing:.2px}
+.brand small{display:block;color:var(--dim);font-size:11px;margin-top:-2px}
+.nav{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;color:var(--muted);font-weight:500;transition:.15s}
+.nav:hover{background:var(--panel2);color:var(--text)}
+.nav.on{background:var(--panel2);color:var(--text);box-shadow:inset 2px 0 0 var(--accent)}
+.nav .k{margin-left:auto;font:11px var(--mono);color:var(--dim)}
+.btn-new{margin:6px 0 14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;background:var(--accent);color:#1a0f0a;font-weight:600;transition:.15s}
+.btn-new:hover{background:var(--accent2)}
+.side .spacer{flex:1}
+.mini{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
+.mini .row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.mini .big{font:600 18px var(--display);margin:2px 0 8px}
+.bar{height:6px;background:#22222a;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;transition:width .6s}
+.side-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 6px 0;color:var(--dim);font-size:11px}
+.icon-btn{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:var(--muted)}
+.icon-btn:hover{background:var(--panel2);color:var(--text)}
+
+/* main */
+.main{display:flex;flex-direction:column;min-width:0}
+.top{display:flex;align-items:center;gap:14px;padding:18px 30px 0}
+.search{flex:1;max-width:560px;display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 13px;color:var(--dim);cursor:text;transition:.15s}
+.search:hover{border-color:var(--line2)}
+.search span{flex:1}
+kbd{font:11px var(--mono);background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--muted)}
+.content{flex:1;overflow-y:auto;padding:24px 30px 40px}
+.view{display:none;animation:fade .25s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+h1{font:600 26px var(--display);letter-spacing:-.3px}
+h2{font:600 13px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:30px 0 12px;display:flex;align-items:center;gap:10px}
+h2 .count{color:var(--dim);font-weight:500}
+.sub{color:var(--muted);margin-top:4px}
+
+/* hero */
+.hero{margin-top:20px;position:relative;border-radius:18px;padding:26px 28px;background:
+  radial-gradient(600px 220px at 100% 0%,rgba(232,132,92,.16),transparent 60%),
+  radial-gradient(400px 200px at 0% 100%,rgba(122,167,255,.08),transparent 60%),var(--panel);
+  border:1px solid var(--line);overflow:hidden}
+.hero .eyebrow{font-size:12px;color:var(--accent2);font-weight:600;letter-spacing:.6px;text-transform:uppercase}
+.hero h3{font:600 30px var(--display);letter-spacing:-.4px;margin:6px 0 2px}
+.hero .path{font:12.5px var(--mono);color:var(--dim)}
+.hero .last{margin-top:16px;display:flex;gap:10px;align-items:flex-start;color:var(--muted);max-width:720px}
+.hero .last q{color:var(--text);quotes:"“" "”"}
+.actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 15px;border-radius:10px;font-weight:600;font-size:13.5px;border:1px solid var(--line2);background:var(--panel2);transition:.15s}
+.btn:hover{border-color:#3a3a45;background:#1d1d23}
+.btn.primary{background:var(--accent);color:#1a0f0a;border-color:transparent}
+.btn.primary:hover{background:var(--accent2)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--text);background:var(--panel2)}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px}
+.btn kbd{margin-left:4px;background:rgba(0,0,0,.18);border-color:rgba(0,0,0,.2);color:inherit;opacity:.7}
+
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.badge.term{color:var(--green);background:var(--green-bg);border-color:transparent}
+.badge.desk{color:var(--blue);background:var(--blue-bg);border-color:transparent}
+.badge.branch{font-family:var(--mono);font-weight:500}
+
+/* grid cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px;transition:.18s;cursor:pointer;display:flex;flex-direction:column;min-height:150px}
+.card:hover{border-color:var(--line2);transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.card .head{display:flex;align-items:center;gap:10px;padding-right:18px}
+.avatar{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;font:700 14px var(--display);color:#fff}
+.card .name{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .p{font:11.5px var(--mono);color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .note{margin-top:10px;color:var(--muted);font-size:12.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.card .foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:8px}
+.card .time{font-size:12px;color:var(--dim)}
+.pin{position:absolute;top:12px;right:12px;color:var(--dim);opacity:0;transition:.15s}
+.card:hover .pin,.pin.on{opacity:1}.pin.on{color:var(--yellow)}
+.more{color:var(--dim)}.more:hover{color:var(--text)}
+
+/* lists */
+.cols{display:grid;grid-template-columns:1fr 1.2fr;gap:22px}.cols>div{min-width:0}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line);cursor:pointer;transition:.12s}
+.item:first-child{border-top:0}
+.item:hover{background:var(--panel2)}
+.item .t{flex:1;min-width:0}
+.item .t b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .t small{display:block;color:var(--dim);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .r{font-size:12px;color:var(--dim);white-space:nowrap}
+.item .go{opacity:0;transition:.12s}
+.item:hover .go{opacity:1}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.empty{padding:26px;text-align:center;color:var(--dim);font-size:13px}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:10px;margin:20px 0 16px;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:20px;border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:600}
+.chip:hover{color:var(--text);border-color:var(--line2)}
+.chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.filter{margin-left:auto;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 11px;width:260px;outline:0}
+.filter:focus{border-color:var(--accent)}
+
+/* usage */
+.ugrid{display:grid;grid-template-columns:320px 1fr;gap:18px;margin-top:20px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px}
+.ring{position:relative;width:200px;height:200px;margin:6px auto 10px}
+.ring .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .c b{font:600 30px var(--display);display:block}
+.ring .c small{color:var(--muted);font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat small{color:var(--muted);font-size:12px}
+.stat b{display:block;font:600 22px var(--display);margin-top:2px}
+.stat i{font-style:normal;color:var(--dim);font-size:12px}
+.chart{display:flex;align-items:flex-end;gap:12px;height:150px;margin-top:16px;padding-top:10px}
+.chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.chart .b{width:100%;max-width:46px;border-radius:7px 7px 3px 3px;background:#2a2a33;min-height:3px;transition:height .6s;position:relative}
+.chart .col.today .b{background:linear-gradient(180deg,var(--accent2),var(--accent))}
+.chart .col span{font-size:11.5px;color:var(--dim)}
+.chart .col em{font-style:normal;font-size:11px;color:var(--muted)}
+.note-box{margin-top:16px;font-size:12.5px;color:var(--dim);display:flex;gap:8px}
+
+/* modal + palette */
+.overlay{position:fixed;inset:0;background:rgba(5,5,8,.62);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding-top:12vh;z-index:20}
+.overlay.on{display:flex;animation:fade .15s}
+.modal{width:520px;background:var(--panel);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.6);padding:24px}
+.modal h3{font:600 20px var(--display)}
+.field{margin-top:16px}
+.field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.input{width:100%;background:var(--bg);border:1px solid var(--line2);border-radius:10px;padding:10px 12px;outline:0}
+.input:focus{border-color:var(--accent)}
+.inrow{display:flex;gap:8px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);border:1px solid var(--line2);border-radius:11px;padding:4px}
+.seg button{padding:9px;border-radius:8px;color:var(--muted);font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.seg button.on{background:var(--panel2);color:var(--text);box-shadow:0 1px 0 var(--line2)}
+.toggle{display:flex;align-items:center;justify-content:space-between;padding:10px 0;color:var(--muted)}
+.sw{width:38px;height:22px;border-radius:20px;background:#2a2a33;position:relative;transition:.15s;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#bbb;transition:.15s}
+.sw.on{background:var(--accent)}.sw.on::after{left:19px;background:#fff}
+.preview{margin-top:12px;font:12px var(--mono);color:var(--dim);word-break:break-all}
+.mfoot{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.palette{width:620px;background:var(--panel);border:1px solid var(--line2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden}
+.palette input{width:100%;background:transparent;border:0;outline:0;padding:18px 20px;font-size:16px;border-bottom:1px solid var(--line)}
+.presults{max-height:52vh;overflow-y:auto;padding:6px}
+.pres{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer}
+.pres.sel{background:var(--panel2)}
+.pres .t{flex:1;min-width:0}
+.pres .t b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pres .t small{color:var(--dim);font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pgroup{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;padding:10px 12px 4px}
+.pfoot{display:flex;gap:16px;padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
+
+.menu{position:fixed;z-index:30;background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:5px;min-width:230px;box-shadow:0 18px 50px rgba(0,0,0,.55);display:none}
+.menu.on{display:block;animation:fade .12s}
+.menu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:8px;text-align:left;color:var(--text);font-size:13px}
+.menu button:hover{background:#25252d}
+.menu hr{border:0;border-top:1px solid var(--line2);margin:4px 2px}
+.menu .danger{color:var(--red)}
+
+.toasts{position:fixed;right:22px;bottom:22px;display:flex;flex-direction:column;gap:8px;z-index:40}
+.toast{background:var(--panel2);border:1px solid var(--line2);border-left:3px solid var(--green);padding:11px 16px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:fade .2s;max-width:380px;font-size:13px}
+.toast.err{border-left-color:var(--red)}
+.skel{height:14px;border-radius:6px;background:linear-gradient(90deg,#1a1a20,#24242c,#1a1a20);background-size:200% 100%;animation:sh 1.2s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <img class="logo" src="assets/icon.svg" alt="">
+      <div><b>Launchpad</b><small>for Claude Code</small></div>
+    </div>
+    <button class="btn-new" onclick="openNew()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New project</button>
+    <button class="nav on" data-view="home"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home<span class="k">1</span></button>
+    <button class="nav" data-view="projects"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects<span class="k">2</span></button>
+    <button class="nav" data-view="sessions"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5M12 7v5l3 2"/></svg>Sessions<span class="k">3</span></button>
+    <button class="nav" data-view="usage"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Usage<span class="k">4</span></button>
+    <div class="spacer"></div>
+    <div class="mini" onclick="go('usage')" id="mini">
+      <div class="row"><span>5-hour block</span><span id="miniRem">—</span></div>
+      <div class="big" id="miniTok"><div class="skel" style="width:70%;height:18px"></div></div>
+      <div class="bar"><i id="miniBar" style="width:0"></i></div>
+    </div>
+    <div class="side-foot"><span id="hotkeyHint"></span>
+      <button class="icon-btn" title="Settings" onclick="openSettings()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="top">
+      <div class="search" onclick="openPalette()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search projects, sessions and actions…</span><kbd>Ctrl K</kbd></div>
+    </div>
+    <div class="content">
+      <!-- HOME -->
+      <section class="view on" id="v-home">
+        <h1 id="greet">Welcome back</h1>
+        <div class="sub" id="greetSub">Pick up right where you left off.</div>
+        <div id="hero"></div>
+        <div id="pinnedWrap"></div>
+        <div class="cols">
+          <div><h2>Recent projects</h2><div class="list" id="recentProjects"></div></div>
+          <div><h2>Recent work <span class="count">Claude Code sessions</span></h2><div class="list" id="recentSessions"></div></div>
+        </div>
+      </section>
+      <!-- PROJECTS -->
+      <section class="view" id="v-projects">
+        <h1>Projects</h1>
+        <div class="sub">Every project you opened from Launchpad or used Claude Code in.</div>
+        <div class="toolbar">
+          <button class="chip on" data-f="all">All</button>
+          <button class="chip" data-f="pinned">Pinned</button>
+          <button class="chip" data-f="terminal">Terminal</button>
+          <button class="chip" data-f="desktop">Desktop</button>
+          <input class="filter" id="filter" placeholder="Filter by name or path…">
+          <button class="btn sm" onclick="addExisting()">+ Add folder</button>
+        </div>
+        <div class="grid" id="projGrid"></div>
+      </section>
+      <!-- SESSIONS -->
+      <section class="view" id="v-sessions">
+        <h1>Sessions</h1>
+        <div class="sub">Your recent Claude Code conversations. Click one to resume it exactly where it was.</div>
+        <div id="sessGroups" style="margin-top:6px"></div>
+      </section>
+      <!-- USAGE -->
+      <section class="view" id="v-usage">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between">
+          <div><h1>Token usage</h1><div class="sub" id="uUpdated">Loading…</div></div>
+          <button class="btn sm" onclick="refreshUsage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg>Refresh</button>
+        </div>
+        <div class="ugrid">
+          <div class="panel">
+            <div style="font-weight:600">Active 5-hour block</div>
+            <div class="ring"><svg width="200" height="200" viewBox="0 0 200 200"><circle cx="100" cy="100" r="84" fill="none" stroke="#22222a" stroke-width="14"/><circle id="ringArc" cx="100" cy="100" r="84" fill="none" stroke="url(#g)" stroke-width="14" stroke-linecap="round" stroke-dasharray="527.8" stroke-dashoffset="527.8" transform="rotate(-90 100 100)" style="transition:stroke-dashoffset .8s"/><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#e8845c"/><stop offset="1" stop-color="#f2c29f"/></linearGradient></defs></svg>
+              <div class="c"><div><b id="ringPct">—</b><small id="ringLbl">of block elapsed</small></div></div></div>
+            <div class="row" style="display:flex;justify-content:space-between;color:var(--muted);font-size:12.5px"><span id="bStart">—</span><span id="bEnd">—</span></div>
+          </div>
+          <div class="panel">
+            <div class="stats">
+              <div class="stat"><small>Tokens in block</small><b id="sTok">—</b><i id="sProj"></i></div>
+              <div class="stat"><small>Estimated block cost</small><b id="sCost">—</b><i id="sCph"></i></div>
+              <div class="stat"><small>Burn rate</small><b id="sBurn">—</b><i>tokens / minute</i></div>
+              <div class="stat"><small>Today</small><b id="sToday">—</b><i id="sTodayCost"></i></div>
+              <div class="stat"><small>Vs your largest block</small><b id="sPct">—</b><i>your personal peak</i></div>
+              <div class="stat"><small>Last 7 days</small><b id="sWeek">—</b><i id="sWeekTok"></i></div>
+            </div>
+            <div style="font-weight:600;margin-top:20px">Estimated cost per day</div>
+            <div class="chart" id="chart"></div>
+          </div>
+        </div>
+        <div class="note-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg><span>Estimated from local Claude Code logs (via ccusage). Official plan limits are not exposed; run <b>/usage</b> inside Claude Code for those.</span></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- new project -->
+<div class="overlay" id="ovNew" onclick="if(event.target===this)closeAll()">
+  <div class="modal">
+    <h3>New project</h3>
+    <div class="field"><label>Name</label><input class="input" id="npName" placeholder="e.g. my-landing-page" autocomplete="off"></div>
+    <div class="field"><label>Create it in</label><div class="inrow"><input class="input" id="npParent"><button class="btn" onclick="browseParent()">Browse…</button></div></div>
+    <div class="field"><label>Work in</label>
+      <div class="seg" id="npMode"><button class="on" data-m="terminal">⌘ Terminal</button><button data-m="desktop">◐ Claude Desktop</button></div></div>
+    <div class="field">
+      <div class="toggle"><span>Initialize a git repository</span><div class="sw on" id="npGit" onclick="this.classList.toggle('on')"></div></div>
+      <div class="toggle"><span>Create a starter CLAUDE.md</span><div class="sw on" id="npMd" onclick="this.classList.toggle('on')"></div></div>
+    </div>
+    <div class="preview" id="npPreview"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn primary" onclick="createProject()">Create and open <kbd>Enter</kbd></button></div>
+  </div>
+</div>
+
+<!-- settings -->
+<div class="overlay" id="ovSettings" onclick="if(event.target===this)closeAll()">
+  <div class="modal">
+    <h3>Settings</h3>
+    <div class="field"><div class="toggle"><span>Minimize Launchpad after opening a project</span><div class="sw" id="setMin" onclick="toggleSetting(this,'minimize_after_open')"></div></div></div>
+    <div class="field" style="color:var(--dim);font-size:12.5px;line-height:1.7">
+      <b style="color:var(--muted)">Keyboard shortcuts</b><br>
+      <kbd>Ctrl K</kbd> search &nbsp; <kbd>Ctrl N</kbd> new project &nbsp; <kbd>Ctrl Enter</kbd> open last project<br>
+      <kbd>1</kbd>–<kbd>4</kbd> switch section &nbsp; <kbd>Esc</kbd> close
+    </div>
+    <div class="mfoot"><button class="btn primary" onclick="closeAll()">Done</button></div>
+  </div>
+</div>
+
+<!-- palette -->
+<div class="overlay" id="ovPal" onclick="if(event.target===this)closeAll()">
+  <div class="palette">
+    <input id="palIn" placeholder="Search a project, a session or an action…" autocomplete="off">
+    <div class="presults" id="palRes"></div>
+    <div class="pfoot"><span><kbd>↑</kbd><kbd>↓</kbd> navigate</span><span><kbd>Enter</kbd> open</span><span><kbd>Esc</kbd> close</span></div>
+  </div>
+</div>
+
+<div class="menu" id="menu"></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+const S={projects:[],sessions:[],last:null,settings:{},default_root:"",usage:null,filter:"all",q:"",mode:"terminal"};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const COLORS=["#e8845c","#7aa7ff","#5fd39a","#c58cff","#f0c35a","#4fc9d6","#ff8fa3","#9aa4ff"];
+const colorOf=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return COLORS[Math.abs(h)%COLORS.length]};
+const initials=n=>(n.replace(/[^\p{L}\p{N} _-]/gu,"").split(/[\s_-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("")||n[0]||"?").toUpperCase();
+const fmtN=n=>n==null?"—":n>=1e6?(n/1e6).toFixed(n>=1e7?1:2).replace(".",",")+" M":n>=1e3?Math.round(n/1e3)+" k":String(Math.round(n));
+const fmt$=n=>n==null?"—":"$"+n.toFixed(2).replace(".",",");
+function ago(t){if(!t)return"never";const s=Date.now()/1000-t;if(s<60)return"just now";if(s<3600)return Math.floor(s/60)+" min ago";if(s<86400)return Math.floor(s/3600)+" h ago";const d=Math.floor(s/86400);if(d===1)return"yesterday";if(d<7)return d+" days ago";return new Date(t*1000).toLocaleDateString("en-US",{day:"numeric",month:"short"})}
+const modeBadge=m=>m==="desktop"?'<span class="badge desk">◐ Desktop</span>':'<span class="badge term">⌘ Terminal</span>';
+const modeLabel=m=>m==="desktop"?"Open in Desktop":"Open in terminal";
+const IC={
+  play:'<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',
+  resume:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>',
+  folder:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>',
+  star:'<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2.5 2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>',
+  dots:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  branch:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="7" r="2.5"/><path d="M6 7.5v9M18 9.5c0 4-6 3-11 7"/></svg>',
+  chat:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
+  plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+};
+const api=()=>window.pywebview&&window.pywebview.api;
+function toast(msg,err){const t=document.createElement("div");t.className="toast"+(err?" err":"");t.textContent=msg;$("#toasts").appendChild(t);setTimeout(()=>t.remove(),3800)}
+
+/* ---------- data ---------- */
+async function load(){
+  try{Object.assign(S,await api().get_state())}catch(e){toast("Failed to load: "+e,1);return}
+  renderAll();
+}
+async function loadUsage(){try{S.usage=await api().get_usage();renderUsage()}catch(e){}}
+
+/* ---------- render ---------- */
+function renderAll(){$("#hotkeyHint").textContent=S.hotkey?S.hotkey+" opens me":"";renderHome();renderProjects();renderSessions();if(S.usage)renderUsage()}
+
+function projectByPath(p){return S.projects.find(x=>x.path===p)}
+
+function renderHome(){
+  const h=new Date().getHours();
+  $("#greet").textContent=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
+  const L=S.last;
+  if(!L){$("#hero").innerHTML=`<div class="hero"><div class="eyebrow">Get started</div><h3>No projects yet</h3><div class="sub">Create your first project or add an existing folder.</div><div class="actions"><button class="btn primary" onclick="openNew()">${IC.plus}New project</button></div></div>`}
+  else{
+    const ls=L.last_session;
+    $("#hero").innerHTML=`<div class="hero">
+      <div class="eyebrow">Continue · ${esc(ago(L.last_activity))}</div>
+      <h3>${esc(L.name)}</h3><div class="path">${esc(short(L.path))}</div>
+      <div class="badges">${modeBadge(L.mode)}${L.branch?`<span class="badge branch">${IC.branch}${esc(L.branch)}</span>`:""}${L.sessions?`<span class="badge">${L.sessions} sessions</span>`:""}</div>
+      ${ls?`<div class="last">${IC.chat}<div>Last task: <q>${esc(ls.title)}</q></div></div>`:""}
+      <div class="actions">
+        <button class="btn primary" onclick="openLast()">${IC.play}${modeLabel(L.mode)}<kbd>Ctrl ↵</kbd></button>
+        ${ls?`<button class="btn" onclick="openP('${jsq(L.path)}','terminal','continue')">${IC.resume}Resume conversation</button>`:""}
+        <button class="btn ghost" onclick="openP('${jsq(L.path)}','${L.mode==="desktop"?"terminal":"desktop"}')">${L.mode==="desktop"?"Open in terminal":"Open in Desktop"}</button>
+        <button class="btn ghost" onclick="explorer('${jsq(L.path)}')">${IC.folder}Folder</button>
+      </div></div>`;
+  }
+  const pinned=S.projects.filter(p=>p.pinned);
+  $("#pinnedWrap").innerHTML=pinned.length?`<h2>Pinned <span class="count">${pinned.length}</span></h2><div class="grid">${pinned.map(cardHTML).join("")}</div>`:"";
+  const rp=S.projects.filter(p=>!L||p.path!==L.path).slice(0,7);
+  $("#recentProjects").innerHTML=rp.length?rp.map(p=>`
+    <div class="item" onclick="openP('${jsq(p.path)}')" oncontextmenu="menuFor(event,'${jsq(p.path)}')">
+      <div class="avatar" style="width:30px;height:30px;font-size:12px;background:${colorOf(p.name)}">${esc(initials(p.name))}</div>
+      <div class="t"><b>${esc(p.name)}</b><small>${esc(short(p.path))}</small></div>
+      <span class="r">${esc(ago(p.last_activity))}</span>
+      <span class="dot" title="${esc(p.mode)}" style="background:${p.mode==="desktop"?"var(--blue)":"var(--green)"}"></span>
+    </div>`).join(""):`<div class="empty">No other recent projects</div>`;
+  const rs=S.sessions.slice(0,8);
+  $("#recentSessions").innerHTML=rs.length?rs.map(sessHTML).join(""):`<div class="empty">No Claude Code sessions found</div>`;
+}
+const short=p=>{const h=S.home||"";return h&&p.toLowerCase().startsWith(h.toLowerCase())?"~"+p.slice(h.length):p};
+/* Escape for a JS string literal that sits inside an HTML attribute: no & < > quotes or newlines survive, so HTML entity decoding cannot break out. */
+const jsq=s=>String(s??"").replace(/[\\'"&<>\n\r\u2028\u2029]/g,c=>"\\u"+c.charCodeAt(0).toString(16).padStart(4,"0"));
+function sessHTML(s){return `<div class="item" onclick="resume('${jsq(s.cwd)}','${jsq(s.id)}')" title="Resume this conversation">
+  <span class="dot" style="background:${colorOf(s.project)}"></span>
+  <div class="t"><b>${esc(s.display)}</b><small>${esc(s.project)}${s.branch?" · "+esc(s.branch):""}</small></div>
+  <span class="r">${esc(ago(s.mtime))}</span><span class="go btn sm">${IC.resume}Resume</span></div>`}
+
+function cardHTML(p){return `<div class="card" onclick="openP('${jsq(p.path)}')" oncontextmenu="menuFor(event,'${jsq(p.path)}')">
+  <button class="pin ${p.pinned?"on":""}" title="Pin" onclick="event.stopPropagation();pin('${jsq(p.path)}')">${IC.star}</button>
+  <div class="head"><div class="avatar" style="background:${colorOf(p.name)}">${esc(initials(p.name))}</div>
+    <div style="min-width:0"><div class="name">${esc(p.name)}</div><div class="p">${esc(short(p.path))}</div></div></div>
+  <div class="note">${p.last_session?esc(p.last_session.title):'<span style="color:var(--dim)">No sessions recorded yet</span>'}</div>
+  <div class="badges">${modeBadge(p.mode)}${p.branch?`<span class="badge branch">${IC.branch}${esc(p.branch)}</span>`:""}</div>
+  <div class="foot"><span class="time">${esc(ago(p.last_activity))}${p.sessions?" · "+p.sessions+" sessions":""}</span>
+    <button class="more icon-btn" onclick="event.stopPropagation();menuFor(event,'${jsq(p.path)}')">${IC.dots}</button></div></div>`}
+
+function renderProjects(){
+  const q=S.q.toLowerCase();
+  let list=S.projects.filter(p=>S.filter==="all"||(S.filter==="pinned"?p.pinned:p.mode===S.filter));
+  if(q)list=list.filter(p=>(p.name+" "+p.path).toLowerCase().includes(q));
+  list=[...list].sort((a,b)=>(b.pinned-a.pinned)||(b.last_activity-a.last_activity));
+  $("#projGrid").innerHTML=list.length?list.map(cardHTML).join(""):`<div class="empty" style="grid-column:1/-1">No projects match the filter</div>`;
+}
+
+function renderSessions(){
+  const groups={};
+  for(const s of S.sessions){const d=new Date(s.mtime*1000);const today=new Date();const y=new Date(Date.now()-864e5);
+    const lbl=d.toDateString()===today.toDateString()?"Today":d.toDateString()===y.toDateString()?"Yesterday":d.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long"});
+    (groups[lbl]=groups[lbl]||[]).push(s)}
+  const keys=Object.keys(groups);
+  $("#sessGroups").innerHTML=keys.length?keys.map(k=>`<h2>${esc(k)} <span class="count">${groups[k].length}</span></h2><div class="list">${groups[k].map(sessHTML).join("")}</div>`).join(""):`<div class="empty">No sessions found in ~/.claude/projects</div>`;
+}
+
+function renderUsage(){
+  const u=S.usage; if(!u)return;
+  if(u.status==="loading"){$("#uUpdated").textContent="First calculation in progress (can take up to a minute)…";return}
+  if(u.status==="error"){$("#uUpdated").textContent="Error: "+u.error;$("#miniTok").textContent="n/a";return}
+  const a=u.active;
+  $("#uUpdated").textContent="Updated "+ago(u.updated)+(u.busy?" · refreshing…":"");
+  if(a){
+    const st=new Date(a.start),en=new Date(a.end),now=Date.now();
+    const frac=Math.min(1,Math.max(0,(now-st)/(en-st)));
+    $("#ringArc").style.strokeDashoffset=527.8*(1-frac);
+    $("#ringPct").textContent=Math.round(frac*100)+"%";
+    const rem=Math.max(0,Math.round((en-now)/60000));
+    $("#ringLbl").innerHTML=`of block elapsed<br>${Math.floor(rem/60)}h ${rem%60}m until reset`;
+    const t=d=>d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+    $("#bStart").textContent="Started "+t(st);$("#bEnd").textContent="Resets "+t(en);
+    $("#sTok").textContent=fmtN(a.tokens);$("#sProj").textContent=a.projection?"projected "+fmtN(a.projection):"";
+    $("#sCost").textContent=fmt$(a.cost);$("#sCph").textContent=a.costPerHour?fmt$(a.costPerHour)+" / hour":"";
+    $("#sBurn").textContent=a.burn?fmtN(a.burn):"—";
+    $("#sPct").textContent=a.percent!=null?Math.round(a.percent)+"%":"—";
+    $("#miniTok").textContent=fmtN(a.tokens)+" tokens";$("#miniRem").textContent=`${Math.floor(rem/60)}h ${rem%60}m`;
+    $("#miniBar").style.width=(frac*100)+"%";
+  }else{
+    $("#ringArc").style.strokeDashoffset=527.8;$("#ringPct").textContent="—";$("#ringLbl").textContent="no active block";
+    ["#sTok","#sCost","#sBurn","#sPct"].forEach(s=>$(s).textContent="—");$("#sProj").textContent=$("#sCph").textContent="";
+    $("#miniTok").textContent="No active block";$("#miniRem").textContent="—";$("#miniBar").style.width="0";
+  }
+  $("#sToday").textContent=fmtN(u.today.tokens);$("#sTodayCost").textContent=fmt$(u.today.cost);
+  const wk=u.last7.reduce((s,d)=>s+d.cost,0),wt=u.last7.reduce((s,d)=>s+d.tokens,0);
+  $("#sWeek").textContent=fmt$(wk);$("#sWeekTok").textContent=fmtN(wt)+" tokens";
+  const max=Math.max(...u.last7.map(d=>d.cost),0.01);
+  $("#chart").innerHTML=u.last7.map((d,i)=>{const dt=new Date(d.date+"T12:00:00");return `<div class="col ${i===6?"today":""}" title="${fmtN(d.tokens)} tokens"><em>${d.cost?fmt$(d.cost):""}</em><div class="b" style="height:${Math.max(2,d.cost/max*100)}%"></div><span>${i===6?"today":dt.toLocaleDateString("en-US",{weekday:"short"})}</span></div>`}).join("");
+}
+
+/* ---------- actions ---------- */
+async function openP(path,mode,resume){const r=await api().open_project(path,mode||null,resume||null);r.ok?toast(r.message):toast(r.error,1);load()}
+function openLast(){if(S.last)openP(S.last.path)}
+function resume(cwd,id){openP(cwd,"terminal",id)}
+async function explorer(p){await api().open_explorer(p)}
+async function pin(p){const on=await api().toggle_pin(p);toast(on?"Pinned":"Unpinned");load()}
+async function refreshUsage(){await api().refresh_usage();toast("Refreshing usage…");setTimeout(loadUsage,800)}
+async function addExisting(){const p=await api().browse_folder(null);if(!p)return;const r=await api().add_existing(p,"terminal");r.ok?toast("Folder added to projects"):toast(r.error,1);load()}
+
+/* context menu */
+function menuFor(e,path){
+  e.preventDefault();e.stopPropagation();
+  const p=projectByPath(path);if(!p)return;const m=$("#menu");
+  m.innerHTML=`
+    <button onclick="openP('${jsq(path)}','terminal')">${IC.play} Open in terminal</button>
+    <button onclick="openP('${jsq(path)}','desktop')">${IC.play} Open in Claude Desktop</button>
+    ${p.last_session?`<button onclick="openP('${jsq(path)}','terminal','continue')">${IC.resume} Resume last conversation</button>`:""}
+    <button onclick="explorer('${jsq(path)}')">${IC.folder} Open folder</button><hr>
+    <button onclick="setMode('${jsq(path)}','${p.mode==="desktop"?"terminal":"desktop"}')">Default to ${p.mode==="desktop"?"Terminal":"Desktop"}</button>
+    <button onclick="pin('${jsq(path)}')">${IC.star} ${p.pinned?"Unpin":"Pin"}</button>
+    <button onclick="renameP('${jsq(path)}')">Rename…</button><hr>
+    <button class="danger" onclick="hideP('${jsq(path)}')">Hide from list</button>`;
+  m.classList.add("on");
+  const x=Math.min(e.clientX,innerWidth-250),y=Math.min(e.clientY,innerHeight-m.offsetHeight-10);
+  m.style.left=x+"px";m.style.top=y+"px";
+}
+document.addEventListener("click",()=>$("#menu").classList.remove("on"));
+async function setMode(p,m){await api().set_mode(p,m);toast("Default mode updated");load()}
+async function renameP(p){const cur=projectByPath(p);const n=prompt("New name:",cur?cur.name:"");if(n){await api().rename(p,n);load()}}
+async function hideP(p){await api().hide(p);toast("Project hidden");load()}
+
+/* new project */
+function openNew(){closeAll();$("#npName").value="";$("#npParent").value=S.default_root;S.mode="terminal";syncSeg();updPreview();$("#ovNew").classList.add("on");setTimeout(()=>$("#npName").focus(),50)}
+function syncSeg(){document.querySelectorAll("#npMode button").forEach(b=>b.classList.toggle("on",b.dataset.m===S.mode))}
+document.querySelectorAll("#npMode button").forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;syncSeg()});
+function updPreview(){const n=$("#npName").value.trim().replace(/[<>:"/\\|?*]/g,"");const sep=S.default_root.includes("\\")?"\\":"/";$("#npPreview").textContent=n?"→ "+$("#npParent").value.replace(/[\\/]$/,"")+sep+n:""}
+$("#npName").oninput=updPreview;$("#npParent").oninput=updPreview;
+async function browseParent(){const p=await api().browse_folder($("#npParent").value);if(p){$("#npParent").value=p;updPreview()}}
+async function createProject(){
+  const r=await api().new_project($("#npName").value,$("#npParent").value,S.mode,$("#npGit").classList.contains("on"),$("#npMd").classList.contains("on"));
+  if(r.ok){closeAll();toast("Project created · "+r.message);load()}else toast(r.error,1);
+}
+
+/* settings */
+function openSettings(){closeAll();$("#setMin").classList.toggle("on",!!S.settings.minimize_after_open);$("#ovSettings").classList.add("on")}
+async function toggleSetting(el,name){el.classList.toggle("on");S.settings[name]=el.classList.contains("on");await api().set_setting(name,S.settings[name])}
+
+/* palette */
+let palItems=[],palSel=0;
+function openPalette(){closeAll();$("#palIn").value="";buildPal();$("#ovPal").classList.add("on");setTimeout(()=>$("#palIn").focus(),30)}
+function buildPal(){
+  const q=$("#palIn").value.toLowerCase().trim();
+  const acts=[
+    {g:"Actions",t:"New project",s:"Ctrl N",run:openNew},
+    ...(S.last?[{g:"Actions",t:"Open last project: "+S.last.name,s:modeLabel(S.last.mode),run:openLast}]:[]),
+    {g:"Actions",t:"Refresh token usage",s:"",run:refreshUsage},
+    {g:"Actions",t:"Add existing folder",s:"",run:addExisting},
+  ];
+  const projs=S.projects.map(p=>({g:"Projects",t:p.name,s:short(p.path),c:colorOf(p.name),run:()=>openP(p.path)}));
+  const sess=S.sessions.map(s=>({g:"Sessions",t:s.display,s:s.project+" · "+ago(s.mtime),c:colorOf(s.project),run:()=>resume(s.cwd,s.id)}));
+  let all=[...acts,...projs,...sess];
+  if(q){const words=q.split(/\s+/);all=all.filter(i=>{const h=(i.t+" "+i.s).toLowerCase();return words.every(w=>h.includes(w))})}
+  else all=[...acts,...projs.slice(0,6),...sess.slice(0,6)];
+  palItems=all.slice(0,40);palSel=0;renderPal();
+}
+function renderPal(){
+  let g="";$("#palRes").innerHTML=palItems.length?palItems.map((i,ix)=>{const head=i.g!==g?`<div class="pgroup">${i.g}</div>`:"";g=i.g;
+    return head+`<div class="pres ${ix===palSel?"sel":""}" data-i="${ix}">${i.c?`<span class="dot" style="background:${i.c}"></span>`:`<span style="color:var(--accent)">›</span>`}<div class="t"><b>${esc(i.t)}</b>${i.s?`<small>${esc(i.s)}</small>`:""}</div></div>`}).join(""):`<div class="empty">No results</div>`;
+  document.querySelectorAll(".pres").forEach(el=>{el.onclick=()=>runPal(+el.dataset.i);el.onmousemove=()=>{if(palSel!==+el.dataset.i){palSel=+el.dataset.i;renderPal()}}});
+  const sel=$(".pres.sel");sel&&sel.scrollIntoView({block:"nearest"});
+}
+function runPal(i){const it=palItems[i];if(!it)return;closeAll();it.run()}
+$("#palIn").oninput=buildPal;
+$("#palIn").onkeydown=e=>{if(e.key==="ArrowDown"){palSel=Math.min(palSel+1,palItems.length-1);renderPal();e.preventDefault()}
+  else if(e.key==="ArrowUp"){palSel=Math.max(palSel-1,0);renderPal();e.preventDefault()}
+  else if(e.key==="Enter"){runPal(palSel)}};
+
+/* navigation */
+function go(v){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("on",n.dataset.view===v));document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));$(".content").scrollTop=0}
+document.querySelectorAll(".nav").forEach(n=>n.onclick=()=>go(n.dataset.view));
+document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{S.filter=c.dataset.f;document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===c));renderProjects()});
+$("#filter").oninput=e=>{S.q=e.target.value;renderProjects()};
+function closeAll(){document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("on"));$("#menu").classList.remove("on")}
+document.addEventListener("keydown",e=>{
+  const typing=["INPUT","TEXTAREA"].includes(document.activeElement.tagName);
+  if(e.key==="Escape"){closeAll();return}
+  if(e.ctrlKey&&e.key.toLowerCase()==="k"){e.preventDefault();openPalette();return}
+  if(e.ctrlKey&&e.key.toLowerCase()==="n"){e.preventDefault();openNew();return}
+  if(e.ctrlKey&&e.key==="Enter"){e.preventDefault();closeAll();openLast();return}
+  if($("#ovNew").classList.contains("on")&&e.key==="Enter"){createProject();return}
+  if(!typing&&!document.querySelector(".overlay.on")&&["1","2","3","4"].includes(e.key))go(["home","projects","sessions","usage"][+e.key-1]);
+});
+window.onShow=()=>load();
+window.addEventListener("focus",()=>api()&&load());
+
+/* boot */
+window.onerror=(m,src,l,c,e)=>{try{api().ui_log("JS error: "+m+" @"+l+":"+c)}catch(_){}};
+window.addEventListener("unhandledrejection",e=>{try{api().ui_log("promise: "+(e.reason&&e.reason.message||e.reason))}catch(_){}});
+let started=false;
+function start(){if(started)return;started=true;load().then(()=>api().ui_log(`ready: ${S.projects.length} projects, ${S.sessions.length} sessions, last=${S.last?S.last.name+" ("+S.last.mode+")":"none"}, ${innerWidth}x${innerHeight}`));loadUsage();setInterval(loadUsage,15000);setInterval(()=>{if(!document.hidden)load()},60000);setInterval(()=>S.usage&&renderUsage(),30000)}
+window.addEventListener("pywebviewready",start);
+(function waitApi(n){if(started)return;const a=window.pywebview&&window.pywebview.api;if(a&&typeof a.get_state==="function"){start();return}if(n<200)setTimeout(()=>waitApi(n+1),50)})(0);
+
+/* browser preview without Python: ui.html?demo */
+if(location.search.includes("demo")){
+  const now=Date.now()/1000,H=3600,ROOT="C:\\Users\\you\\Projects\\";
+  const notes=["Add OAuth login and session refresh","Fix flaky checkout tests on CI","Refactor the pricing table into components","Write docs for the public API","Tune the image pipeline for mobile","Set up the staging deploy"];
+  const mk=(n,m,t,s,b,pin,i)=>({name:n,path:ROOT+n,mode:m,last_activity:now-t,last_opened:t<9e4?now-t:0,sessions:s,branch:b,pinned:pin,last_session:s?{id:"x",title:notes[i],mtime:now-t}:null});
+  const projects=[mk("acme-dashboard","terminal",1800,14,"main",true,0),mk("portfolio-site","desktop",5*H,6,"feature/redesign",true,1),mk("api-gateway","terminal",26*H,22,"main",false,2),mk("mobile-app","terminal",50*H,3,"dev",false,3),mk("blog-engine","desktop",5*86400,4,null,false,4),mk("data-pipeline","terminal",9*86400,11,"master",false,5)];
+  const titles=["Add OAuth login and session refresh","Bump dependencies and fix breaking changes","Animate the hero section on scroll","Deploy fails with a 500 on the health check","Add unit tests for the CSV parser","Build a landing page for the beta"];
+  const sessions=titles.map((t,i)=>({id:"s"+i,cwd:projects[i%projects.length].path,display:t,project:projects[i%projects.length].name,branch:projects[i%projects.length].branch,mtime:now-(i*7+0.4)*H}));
+  const days=[...Array(7)].map((_,i)=>{const d=new Date(Date.now()-(6-i)*864e5);return{date:d.toISOString().slice(0,10),cost:[3.1,0,5.6,8.2,2.4,11.7,6.3][i],tokens:[4e6,0,7e6,1.1e7,3e6,1.6e7,8e6][i]}});
+  window.pywebview={api:{
+    get_state:async()=>({projects,sessions,last:projects[0],default_root:"C:\\Users\\you\\Projects",home:"C:\\Users\\you",settings:{minimize_after_open:true}}),
+    get_usage:async()=>({status:"ok",updated:now-40,today:days[6],last7:days,active:{tokens:8.1e6,cost:6.3,start:new Date(Date.now()-2.2*36e5).toISOString(),end:new Date(Date.now()+2.8*36e5).toISOString(),burn:61000,costPerHour:2.9,projection:1.9e7,percent:64}}),
+    open_project:async()=>({ok:true,message:"Terminal opened with Claude Code"}),toggle_pin:async()=>true,refresh_usage:async()=>true,open_explorer:async()=>true,
+    browse_folder:async()=>null,new_project:async()=>({ok:true,message:"ok"}),set_mode:async()=>true,rename:async()=>true,hide:async()=>true,set_setting:async()=>true,ui_log:async()=>true,add_existing:async()=>({ok:true})}};
+  setTimeout(start,0);
+}
+</script>
+</body>
+</html>
