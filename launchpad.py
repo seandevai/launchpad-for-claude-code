@@ -16,7 +16,7 @@ import threading
 import time
 from datetime import datetime
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 SYSTEM = platform.system()
 HOME = os.path.expanduser("~")
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -268,6 +268,220 @@ def open_terminal(path, args):
             subprocess.Popen([term, "-e", "bash", "-lc", f"cd {shlex.quote(path)} && {cmd}; exec bash"])
 
 
+# ------------------------------------------------------------------ extensions (plugins, mods, skills)
+#
+# Per-project switches are written to <project>/.claude/settings.local.json, the
+# documented "project local" scope: it overrides ~/.claude/settings.json for that
+# project only and stays out of git. Nothing global is ever modified.
+#   - plugins and mods  -> "enabledPlugins": {"<name>@<origin>": true|false}
+#   - personal skills   -> "skillOverrides": {"<skill>": "on"|"off"}
+# Mods loaded through CLAUDE_CODE_PLUGIN_DIRS have the id "<name>@inline".
+
+CLAUDE_DIR = os.path.join(HOME, ".claude")
+PLUGIN_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}@[A-Za-z0-9][A-Za-z0-9._-]{0,99}")
+SKILL_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")
+
+
+def read_json(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _manifest(root):
+    for mf in (os.path.join(root, ".claude-plugin", "plugin.json"), os.path.join(root, "plugin.json")):
+        data = read_json(mf)
+        if data:
+            return data
+    return {}
+
+
+def _is_mod(root):
+    return bool(read_json(os.path.join(root, "hooks", "hooks.json")).get("modules"))
+
+
+def _skill_count(root):
+    sk = os.path.join(root, "skills")
+    try:
+        return sum(1 for e in os.scandir(sk) if os.path.exists(os.path.join(e.path, "SKILL.md")))
+    except OSError:
+        return 0
+
+
+def _frontmatter(md):
+    try:
+        with open(md, encoding="utf-8", errors="replace") as f:
+            text = f.read(4000)
+    except OSError:
+        return {}
+    m = re.match(r"---\s*\n(.*?)\n---", text, re.S)
+    out = {}
+    if m:
+        for line in m.group(1).splitlines():
+            if ":" in line and not line.startswith((" ", "\t")):
+                k, v = line.split(":", 1)
+                out[k.strip()] = v.strip().strip("\"'")
+    return out
+
+
+def _short(text, n=160):
+    text = re.sub(r"\s+", " ", str(text or "")).strip()
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+def extension_inventory():
+    """Everything the user has installed, with the state it has by default (from user settings)."""
+    user = read_json(os.path.join(CLAUDE_DIR, "settings.json"))
+    enabled = user.get("enabledPlugins") if isinstance(user.get("enabledPlugins"), dict) else {}
+    overrides = user.get("skillOverrides") if isinstance(user.get("skillOverrides"), dict) else {}
+    items, seen = [], set()
+
+    def add(item):
+        if item["id"] not in seen:
+            seen.add(item["id"])
+            items.append(item)
+
+    installed = read_json(os.path.join(CLAUDE_DIR, "plugins", "installed_plugins.json")).get("plugins") or {}
+    for pid, entries in installed.items() if isinstance(installed, dict) else []:
+        if not PLUGIN_ID_RE.fullmatch(str(pid)):
+            continue
+        entries = [e for e in (entries if isinstance(entries, list) else [entries]) if isinstance(e, dict)]
+        user_scope = any(e.get("scope") == "user" for e in entries)
+        root = next((e.get("installPath") for e in entries if e.get("installPath")), None)
+        root = root if root and os.path.isdir(root) else None
+        m = _manifest(root) if root else {}
+        add({"kind": "mod" if root and _is_mod(root) else "plugin", "id": pid, "name": pid.split("@")[0],
+             "source": pid.split("@")[1], "description": _short(m.get("description")),
+             "skills": _skill_count(root) if root else 0, "scope": "user" if user_scope else "project",
+             "default": bool(enabled[pid]) if pid in enabled else user_scope})
+
+    env_dirs = (user.get("env") or {}).get("CLAUDE_CODE_PLUGIN_DIRS") if isinstance(user.get("env"), dict) else None
+    env_dirs = env_dirs or os.environ.get("CLAUDE_CODE_PLUGIN_DIRS") or ""
+    for d in [x.strip() for x in str(env_dirs).split(os.pathsep) if x.strip()]:
+        d = os.path.expanduser(d)
+        if not os.path.isdir(d):
+            continue
+        m = _manifest(d)
+        name = str(m.get("name") or os.path.basename(d.rstrip("\\/")))
+        pid = f"{name}@inline"
+        if not PLUGIN_ID_RE.fullmatch(pid):
+            continue
+        add({"kind": "mod" if _is_mod(d) else "plugin", "id": pid, "name": name, "source": "inline",
+             "description": _short(m.get("description")), "skills": _skill_count(d), "scope": "user",
+             "default": bool(enabled[pid]) if pid in enabled else m.get("defaultEnabled", True) is not False})
+
+    skills_dir = os.path.join(CLAUDE_DIR, "skills")
+    try:
+        entries = sorted(os.scandir(skills_dir), key=lambda e: e.name.lower())
+    except OSError:
+        entries = []
+    for e in entries:
+        if not e.is_dir():
+            continue
+        if os.path.exists(os.path.join(e.path, ".claude-plugin", "plugin.json")):
+            m = _manifest(e.path)
+            name = str(m.get("name") or e.name)
+            pid = f"{name}@skills-dir"
+            if PLUGIN_ID_RE.fullmatch(pid):
+                add({"kind": "mod" if _is_mod(e.path) else "plugin", "id": pid, "name": name, "source": "skills-dir",
+                     "description": _short(m.get("description")), "skills": _skill_count(e.path), "scope": "user",
+                     "default": bool(enabled[pid]) if pid in enabled else m.get("defaultEnabled", True) is not False})
+            continue
+        md = os.path.join(e.path, "SKILL.md")
+        if not os.path.exists(md):
+            continue
+        fm = _frontmatter(md)
+        name = str(fm.get("name") or e.name)
+        if not SKILL_NAME_RE.fullmatch(name):
+            continue
+        add({"kind": "skill", "id": "skill:" + name, "name": name, "source": "personal",
+             "description": _short(fm.get("description")), "skills": 0, "scope": "user",
+             "default": overrides.get(name, "on") != "off"})
+
+    order = {"mod": 0, "plugin": 1, "skill": 2}
+    items.sort(key=lambda i: (order[i["kind"]], i["name"].lower()))
+    return items
+
+
+def project_extension_state(path, items):
+    """Effective on/off for each item in a project: local > shared project > user default."""
+    shared = read_json(os.path.join(path, ".claude", "settings.json"))
+    local = read_json(os.path.join(path, ".claude", "settings.local.json"))
+    states = {}
+    for it in items:
+        val, inherited = it["default"], it["default"]
+        if it["kind"] == "skill":
+            name = it["name"]
+            for src in (shared, local):
+                ov = src.get("skillOverrides") if isinstance(src.get("skillOverrides"), dict) else {}
+                if name in ov:
+                    val = ov[name] != "off"
+                if src is shared:
+                    inherited = val
+        else:
+            for src in (shared, local):
+                ep = src.get("enabledPlugins") if isinstance(src.get("enabledPlugins"), dict) else {}
+                if it["id"] in ep:
+                    val = bool(ep[it["id"]])
+                if src is shared:
+                    inherited = val
+        states[it["id"]] = (val, inherited)
+    return states
+
+
+def write_project_extensions(path, states, items):
+    """Write only the switches that differ from what the project would inherit."""
+    by_id = {i["id"]: i for i in items}
+    current = project_extension_state(path, items)
+    local_path = os.path.join(path, ".claude", "settings.local.json")
+    local = read_json(local_path)
+    ep = dict(local.get("enabledPlugins") or {}) if isinstance(local.get("enabledPlugins"), dict) else {}
+    so = dict(local.get("skillOverrides") or {}) if isinstance(local.get("skillOverrides"), dict) else {}
+    for iid, want in states.items():
+        it = by_id.get(iid)
+        if it is None or not isinstance(want, bool):
+            continue  # unknown ids from the UI are ignored, never written
+        inherited = current[iid][1]
+        if it["kind"] == "skill":
+            if want == inherited:
+                so.pop(it["name"], None)
+            else:
+                so[it["name"]] = "on" if want else "off"
+        else:
+            if want == inherited:
+                ep.pop(iid, None)
+            else:
+                ep[iid] = want
+    for k, v in (("enabledPlugins", ep), ("skillOverrides", so)):
+        if v:
+            local[k] = v
+        else:
+            local.pop(k, None)
+    if not local and not os.path.exists(local_path):
+        return 0
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    tmp = local_path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(local, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+    os.replace(tmp, local_path)
+    return len(ep) + len(so)
+
+
+def ensure_gitignored(path, entry=".claude/settings.local.json"):
+    gi = os.path.join(path, ".gitignore")
+    try:
+        existing = open(gi, encoding="utf-8").read() if os.path.exists(gi) else ""
+    except OSError:
+        return
+    if entry not in existing.splitlines():
+        with open(gi, "a", encoding="utf-8") as f:
+            f.write(("" if not existing or existing.endswith("\n") else "\n") + entry + "\n")
+
+
 # ------------------------------------------------------------------ token usage
 
 class Usage:
@@ -434,7 +648,7 @@ class Api:
                 pass
         return {"ok": True, "message": msg}
 
-    def new_project(self, name, parent, mode="terminal", git_init=True, claude_md=True):
+    def new_project(self, name, parent, mode="terminal", git_init=True, claude_md=True, extensions=None):
         name = re.sub(r'[<>:"/\\|?*]', "", (name or "").strip()).strip(". ")
         if not name or name.split(".")[0].upper() in WINDOWS_RESERVED:
             return {"ok": False, "error": "Enter a valid name"}
@@ -452,9 +666,67 @@ class Api:
         except OSError as e:
             return {"ok": False, "error": str(e)}
         self._store.upsert(path, name=name, mode=mode, created=time.time(), hidden=False)
+        if isinstance(extensions, dict) and extensions:
+            try:
+                if write_project_extensions(path, extensions, extension_inventory()) and git_init:
+                    ensure_gitignored(path)
+            except OSError as e:
+                log(f"extensions not written for {path}: {e!r}")
         res = self.open_project(path, mode)
         res["path"] = path
         return res
+
+    def open_desktop(self):
+        try:
+            open_claude_desktop()
+        except (OSError, RuntimeError) as e:
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "message": "Claude Desktop opened"}
+
+    # --- extensions
+    def _known_project(self, path):
+        if not path or not os.path.isdir(path):
+            return False
+        return self._store.get(path) is not None or any(key(s["cwd"]) == key(path) for s in scan_sessions())
+
+    def get_extensions(self, path=None):
+        items = extension_inventory()
+        defaults = self._store.data["settings"].get("extension_defaults") or {}
+        if path:
+            if not self._known_project(path):
+                return {"ok": False, "error": "Unknown project"}
+            states = project_extension_state(path, items)
+            for it in items:
+                it["state"], it["inherited"] = states[it["id"]]
+        else:
+            for it in items:
+                it["inherited"] = it["default"]
+                it["state"] = bool(defaults[it["id"]]) if isinstance(defaults.get(it["id"]), bool) else it["default"]
+        return {"ok": True, "items": items, "has_defaults": bool(defaults)}
+
+    def set_extensions(self, path, states):
+        if not self._known_project(path) or not isinstance(states, dict):
+            return {"ok": False, "error": "Unknown project"}
+        try:
+            n = write_project_extensions(path, states, extension_inventory())
+        except OSError as e:
+            return {"ok": False, "error": str(e)}
+        log(f"extensions saved for {path}: {n} override(s)")
+        return {"ok": True, "overrides": n,
+                "message": f"Saved {n} project override(s). Restart Claude Code in that folder (or run /reload-plugins) to apply."}
+
+    def save_extension_defaults(self, states):
+        if not isinstance(states, dict):
+            return False
+        valid = {i["id"] for i in extension_inventory()}
+        clean = {k: v for k, v in states.items() if k in valid and isinstance(v, bool)}
+        with self._store.lock:
+            if clean:
+                self._store.data["settings"]["extension_defaults"] = clean
+            else:
+                self._store.data["settings"].pop("extension_defaults", None)
+            self._store.save()
+        return True
 
     def add_existing(self, path, mode="terminal"):
         if not path or not os.path.isdir(path):
@@ -547,6 +819,11 @@ def selftest():
         log(f"  P {p['name']} | {p['mode']} | {p['sessions']} sess | {p['path']}")
     for s in st["sessions"][:5]:
         log(f"  S {s['project']} | {s['display'][:70]}")
+    t = time.time()
+    inv = extension_inventory()
+    kinds = {k: sum(1 for i in inv if i["kind"] == k) for k in ("mod", "plugin", "skill")}
+    log(f"selftest extensions {time.time()-t:.2f}s: {kinds}, off by default: "
+        f"{[i['id'] for i in inv if not i['default']]}")
     t = time.time()
     u = Usage()._fetch()
     log(f"selftest usage {time.time()-t:.1f}s: status={u.get('status')} active={bool(u.get('active'))} err={u.get('error')}")

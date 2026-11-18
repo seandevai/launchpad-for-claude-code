@@ -37,10 +37,9 @@ svg{display:block}
 .nav .k{margin-left:auto;font:11px var(--mono);color:var(--dim)}
 .btn-new{margin:6px 0 14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:10px;background:var(--accent);color:#1a0f0a;font-weight:600;transition:.15s}
 .btn-new:hover{background:var(--accent2)}
+.btn-desk{margin:-6px 0 14px;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px;border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--text);font-weight:600;transition:.15s}
+.btn-desk:hover{border-color:#3a3a45;background:#1d1d23}
 .side .spacer{flex:1}
-.mini{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer}
-.mini .row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
-.mini .big{font:600 18px var(--display);margin:2px 0 8px}
 .bar{height:6px;background:#22222a;border-radius:6px;overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;transition:width .6s}
 .side-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 6px 0;color:var(--dim);font-size:11px}
@@ -150,7 +149,33 @@ h2 .count{color:var(--dim);font-weight:500}
 /* modal + palette */
 .overlay{position:fixed;inset:0;background:rgba(5,5,8,.62);backdrop-filter:blur(6px);display:none;align-items:flex-start;justify-content:center;padding-top:12vh;z-index:20}
 .overlay.on{display:flex;animation:fade .15s}
-.modal{width:520px;background:var(--panel);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.6);padding:24px}
+.modal{width:520px;max-height:84vh;overflow-y:auto;background:var(--panel);border:1px solid var(--line2);border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.6);padding:24px;transition:width .2s}
+.modal.wide{width:700px}
+.exthead{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line2);border-radius:12px;background:var(--bg)}
+.exthead b{font-weight:600}
+.exthead small{color:var(--dim);flex:1}
+.extpanel{margin-top:10px;border:1px solid var(--line2);border-radius:12px;background:var(--bg);overflow:hidden}
+.exttabs{display:flex;gap:4px;padding:8px;border-bottom:1px solid var(--line);align-items:center}
+.exttabs button{padding:6px 11px;border-radius:8px;color:var(--muted);font-weight:600;font-size:12.5px}
+.exttabs button.on{background:var(--panel2);color:var(--text)}
+.exttabs button i{font-style:normal;color:var(--dim);font-weight:500;margin-left:4px}
+.exttabs input{margin-left:auto;width:170px;background:var(--panel);border:1px solid var(--line2);border-radius:8px;padding:5px 9px;outline:0;font-size:12.5px}
+.extlist{max-height:290px;overflow-y:auto}
+.ext{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);cursor:pointer}
+.ext:first-child{border-top:0}
+.ext:hover{background:#121216}
+.ext .t{flex:1;min-width:0}
+.ext .t b{display:flex;align-items:center;gap:7px;font-weight:600;font-size:13px}
+.ext .t small{display:block;color:var(--dim);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ext .tag{font-size:10.5px;font-weight:600;color:var(--muted);background:var(--panel2);border:1px solid var(--line2);border-radius:20px;padding:0 7px}
+.ext .tag.chg{color:var(--accent2);border-color:rgba(232,132,92,.4);background:var(--accent-bg)}
+.ext.off .t b{color:var(--muted)}
+.extfoot{display:flex;align-items:center;gap:8px;padding:8px 10px;border-top:1px solid var(--line);font-size:12px;color:var(--dim)}
+.extfoot .sp{flex:1}
+.check{display:flex;align-items:center;gap:8px;margin-top:12px;color:var(--muted);font-size:12.5px;cursor:pointer}
+.check .box{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line2);display:grid;place-items:center}
+.check.on .box{background:var(--accent);border-color:var(--accent)}
+.check.on .box::after{content:"";width:8px;height:4px;border:2px solid #1a0f0a;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
 .modal h3{font:600 20px var(--display)}
 .field{margin-top:16px}
 .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:600}
@@ -199,16 +224,13 @@ h2 .count{color:var(--dim);font-weight:500}
       <div><b>Launchpad</b><small>for Claude Code</small></div>
     </div>
     <button class="btn-new" onclick="openNew()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New project</button>
+    <button class="btn-desk" onclick="openDesktop()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Open Claude Desktop</button>
     <button class="nav on" data-view="home"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home<span class="k">1</span></button>
     <button class="nav" data-view="projects"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects<span class="k">2</span></button>
     <button class="nav" data-view="sessions"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5M12 7v5l3 2"/></svg>Sessions<span class="k">3</span></button>
     <button class="nav" data-view="usage"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Usage<span class="k">4</span></button>
     <div class="spacer"></div>
-    <div class="mini" onclick="go('usage')" id="mini">
-      <div class="row"><span>5-hour block</span><span id="miniRem">—</span></div>
-      <div class="big" id="miniTok"><div class="skel" style="width:70%;height:18px"></div></div>
-      <div class="bar"><i id="miniBar" style="width:0"></i></div>
-    </div>
+
     <div class="side-foot"><span id="hotkeyHint"></span>
       <button class="icon-btn" title="Settings" onclick="openSettings()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
@@ -294,8 +316,22 @@ h2 .count{color:var(--dim);font-weight:500}
       <div class="toggle"><span>Initialize a git repository</span><div class="sw on" id="npGit" onclick="this.classList.toggle('on')"></div></div>
       <div class="toggle"><span>Create a starter CLAUDE.md</span><div class="sw on" id="npMd" onclick="this.classList.toggle('on')"></div></div>
     </div>
+    <div class="field"><label>Extensions for this project</label>
+      <div class="exthead"><b id="npExtSum">Loading…</b><small id="npExtSub"></small><button class="btn sm" id="npExtBtn" onclick="toggleNpExt()">Customize</button></div>
+      <div id="npExtPanel" style="display:none"></div>
+    </div>
     <div class="preview" id="npPreview"></div>
     <div class="mfoot"><button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn primary" onclick="createProject()">Create and open <kbd>Enter</kbd></button></div>
+  </div>
+</div>
+
+<!-- project extensions -->
+<div class="overlay" id="ovExt" onclick="if(event.target===this)closeAll()">
+  <div class="modal wide">
+    <h3 id="exTitle">Extensions</h3>
+    <div class="sub" style="font-size:12.5px">Turn mods, plugins and personal skills on or off for this project only. Saved in the project's <code>.claude/settings.local.json</code>; your global settings are not touched.</div>
+    <div id="exPanel" style="margin-top:14px"></div>
+    <div class="mfoot"><button class="btn ghost" onclick="closeAll()">Cancel</button><button class="btn primary" onclick="saveProjectExt()">Save</button></div>
   </div>
 </div>
 
@@ -345,6 +381,7 @@ const IC={
   dots:'<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
   branch:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="5" r="2.5"/><circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="7" r="2.5"/><path d="M6 7.5v9M18 9.5c0 4-6 3-11 7"/></svg>',
   chat:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',
+  puzzle:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v7h-3a2 2 0 1 0 0 4h3v7h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3h7z"/></svg>',
   plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
 };
 const api=()=>window.pywebview&&window.pywebview.api;
@@ -431,7 +468,7 @@ function renderSessions(){
 function renderUsage(){
   const u=S.usage; if(!u)return;
   if(u.status==="loading"){$("#uUpdated").textContent="First calculation in progress (can take up to a minute)…";return}
-  if(u.status==="error"){$("#uUpdated").textContent="Error: "+u.error;$("#miniTok").textContent="n/a";return}
+  if(u.status==="error"){$("#uUpdated").textContent="Error: "+u.error;return}
   const a=u.active;
   $("#uUpdated").textContent="Updated "+ago(u.updated)+(u.busy?" · refreshing…":"");
   if(a){
@@ -447,12 +484,9 @@ function renderUsage(){
     $("#sCost").textContent=fmt$(a.cost);$("#sCph").textContent=a.costPerHour?fmt$(a.costPerHour)+" / hour":"";
     $("#sBurn").textContent=a.burn?fmtN(a.burn):"—";
     $("#sPct").textContent=a.percent!=null?Math.round(a.percent)+"%":"—";
-    $("#miniTok").textContent=fmtN(a.tokens)+" tokens";$("#miniRem").textContent=`${Math.floor(rem/60)}h ${rem%60}m`;
-    $("#miniBar").style.width=(frac*100)+"%";
   }else{
     $("#ringArc").style.strokeDashoffset=527.8;$("#ringPct").textContent="—";$("#ringLbl").textContent="no active block";
     ["#sTok","#sCost","#sBurn","#sPct"].forEach(s=>$(s).textContent="—");$("#sProj").textContent=$("#sCph").textContent="";
-    $("#miniTok").textContent="No active block";$("#miniRem").textContent="—";$("#miniBar").style.width="0";
   }
   $("#sToday").textContent=fmtN(u.today.tokens);$("#sTodayCost").textContent=fmt$(u.today.cost);
   const wk=u.last7.reduce((s,d)=>s+d.cost,0),wt=u.last7.reduce((s,d)=>s+d.tokens,0);
@@ -481,6 +515,7 @@ function menuFor(e,path){
     <button onclick="explorer('${jsq(path)}')">${IC.folder} Open folder</button><hr>
     <button onclick="setMode('${jsq(path)}','${p.mode==="desktop"?"terminal":"desktop"}')">Default to ${p.mode==="desktop"?"Terminal":"Desktop"}</button>
     <button onclick="pin('${jsq(path)}')">${IC.star} ${p.pinned?"Unpin":"Pin"}</button>
+    <button onclick="openProjectExt('${jsq(path)}')">${IC.puzzle} Extensions…</button>
     <button onclick="renameP('${jsq(path)}')">Rename…</button><hr>
     <button class="danger" onclick="hideP('${jsq(path)}')">Hide from list</button>`;
   m.classList.add("on");
@@ -493,16 +528,73 @@ async function renameP(p){const cur=projectByPath(p);const n=prompt("New name:",
 async function hideP(p){await api().hide(p);toast("Project hidden");load()}
 
 /* new project */
-function openNew(){closeAll();$("#npName").value="";$("#npParent").value=S.default_root;S.mode="terminal";syncSeg();updPreview();$("#ovNew").classList.add("on");setTimeout(()=>$("#npName").focus(),50)}
+function openNew(){closeAll();$("#npName").value="";$("#npParent").value=S.default_root;S.mode="terminal";syncSeg();updPreview();
+  $("#npExtPanel").style.display="none";$("#npExtBtn").textContent="Customize";$("#ovNew .modal").classList.remove("wide");
+  $("#ovNew").classList.add("on");setTimeout(()=>$("#npName").focus(),50);
+  NP_EXT=newExt();loadExt(NP_EXT,null).then(()=>{extSummary(NP_EXT,"#npExtSum","#npExtSub");renderExt(NP_EXT,"#npExtPanel")})}
 function syncSeg(){document.querySelectorAll("#npMode button").forEach(b=>b.classList.toggle("on",b.dataset.m===S.mode))}
 document.querySelectorAll("#npMode button").forEach(b=>b.onclick=()=>{S.mode=b.dataset.m;syncSeg()});
 function updPreview(){const n=$("#npName").value.trim().replace(/[<>:"/\\|?*]/g,"");const sep=S.default_root.includes("\\")?"\\":"/";$("#npPreview").textContent=n?"→ "+$("#npParent").value.replace(/[\\/]$/,"")+sep+n:""}
 $("#npName").oninput=updPreview;$("#npParent").oninput=updPreview;
 async function browseParent(){const p=await api().browse_folder($("#npParent").value);if(p){$("#npParent").value=p;updPreview()}}
 async function createProject(){
-  const r=await api().new_project($("#npName").value,$("#npParent").value,S.mode,$("#npGit").classList.contains("on"),$("#npMd").classList.contains("on"));
+  if(NP_EXT&&NP_EXT.remember)await api().save_extension_defaults(NP_EXT.state);
+  const r=await api().new_project($("#npName").value,$("#npParent").value,S.mode,$("#npGit").classList.contains("on"),$("#npMd").classList.contains("on"),NP_EXT?NP_EXT.state:null);
   if(r.ok){closeAll();toast("Project created · "+r.message);load()}else toast(r.error,1);
 }
+
+/* extensions panel (mods, plugins, personal skills) */
+const KIND_LABEL={mod:"Mods",plugin:"Plugins",skill:"Skills"};
+let NP_EXT=null,PX_EXT=null;
+const newExt=()=>({items:[],state:{},tab:"mod",q:"",remember:false,path:null,ok:true});
+async function loadExt(E,path){
+  E.path=path;let r;try{r=await api().get_extensions(path)}catch(e){r={ok:false,error:String(e)}}
+  if(!r.ok){E.ok=false;E.error=r.error;E.items=[];return}
+  E.items=r.items;E.state={};r.items.forEach(i=>E.state[i.id]=i.state);
+  E.tab=["mod","plugin","skill"].find(k=>r.items.some(i=>i.kind===k))||"mod";
+}
+function extCounts(E){const c={};for(const k of["mod","plugin","skill"]){const all=E.items.filter(i=>i.kind===k);c[k]={n:all.length,on:all.filter(i=>E.state[i.id]).length}}return c}
+function extSummary(E,sumSel,subSel){
+  if(!E.ok){$(sumSel).textContent="Not available";$(subSel).textContent=E.error||"";return}
+  if(!E.items.length){$(sumSel).textContent="Nothing installed";$(subSel).textContent="No mods, plugins or personal skills found in ~/.claude";return}
+  const c=extCounts(E);
+  $(sumSel).textContent=["mod","plugin","skill"].filter(k=>c[k].n).map(k=>`${c[k].on}/${c[k].n} ${KIND_LABEL[k].toLowerCase()}`).join(" · ");
+  const changed=E.items.filter(i=>E.state[i.id]!==i.inherited).length;
+  $(subSel).textContent=changed?`${changed} different from your global setup`:"Same as your global setup";
+}
+function renderExt(E,sel){
+  const el=$(sel);if(!el)return;
+  if(!E.ok||!E.items.length){el.innerHTML="";return}
+  const c=extCounts(E);const q=E.q.toLowerCase();
+  const list=E.items.filter(i=>i.kind===E.tab&&(!q||(i.name+" "+i.description).toLowerCase().includes(q)));
+  el.innerHTML=`<div class="extpanel">
+    <div class="exttabs">${["mod","plugin","skill"].filter(k=>c[k].n).map(k=>`<button data-tab="${k}" class="${E.tab===k?"on":""}">${KIND_LABEL[k]}<i>${c[k].on}/${c[k].n}</i></button>`).join("")}
+      <input placeholder="Filter…" value="${esc(E.q)}" data-q></div>
+    <div class="extlist">${list.length?list.map(i=>{const on=!!E.state[i.id];const chg=on!==i.inherited;
+      return `<div class="ext ${on?"":"off"}" data-id="${esc(i.id)}">
+        <div class="t"><b>${esc(i.name)}${(+i.skills>0)?`<span class="tag">${Math.floor(+i.skills)} skills</span>`:""}${i.scope==="project"?`<span class="tag" title="Installed for another project">project</span>`:""}${chg?`<span class="tag chg">${on?"on here":"off here"}</span>`:""}</b>
+        <small title="${esc(i.description)}">${esc(i.description)||"&nbsp;"}</small></div>
+        <div class="sw ${on?"on":""}"></div></div>`}).join(""):`<div class="empty">Nothing matches</div>`}</div>
+    <div class="extfoot"><button class="btn sm ghost" data-bulk="on">All on</button><button class="btn sm ghost" data-bulk="off">All off</button><button class="btn sm ghost" data-bulk="reset">Reset to global</button><span class="sp"></span><span>${E.path?"Applies to this project only":"Applies to the new project only"}</span></div>
+  </div>${E.path?"":`<div class="check ${E.remember?"on":""}" data-remember><span class="box"></span>Use these choices as the default for new projects</div>`}`;
+  el.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{E.tab=b.dataset.tab;renderExt(E,sel)});
+  const inp=el.querySelector("[data-q]");inp.oninput=()=>{E.q=inp.value;const pos=inp.selectionStart;renderExt(E,sel);const n=$(sel).querySelector("[data-q]");n.focus();n.setSelectionRange(pos,pos)};
+  el.querySelectorAll(".ext").forEach(r=>r.onclick=()=>{const id=r.dataset.id;if(!(id in E.state))return;E.state[id]=!E.state[id];renderExt(E,sel);E.onchange&&E.onchange()});
+  el.querySelectorAll("[data-bulk]").forEach(b=>b.onclick=()=>{const m=b.dataset.bulk;E.items.filter(i=>i.kind===E.tab).forEach(i=>E.state[i.id]=m==="reset"?i.inherited:m==="on");renderExt(E,sel);E.onchange&&E.onchange()});
+  const rm=el.querySelector("[data-remember]");if(rm)rm.onclick=()=>{E.remember=!E.remember;renderExt(E,sel)};
+}
+function toggleNpExt(){const p=$("#npExtPanel"),open=p.style.display==="none";p.style.display=open?"block":"none";$("#npExtBtn").textContent=open?"Hide":"Customize";$("#ovNew .modal").classList.toggle("wide",open);
+  if(NP_EXT){NP_EXT.onchange=()=>extSummary(NP_EXT,"#npExtSum","#npExtSub");renderExt(NP_EXT,"#npExtPanel")}}
+async function openProjectExt(path){
+  closeAll();const p=projectByPath(path);$("#exTitle").textContent="Extensions · "+(p?p.name:path);
+  $("#exPanel").innerHTML='<div class="skel" style="height:120px"></div>';$("#ovExt").classList.add("on");
+  PX_EXT=newExt();await loadExt(PX_EXT,path);
+  if(!PX_EXT.ok){$("#exPanel").innerHTML=`<div class="empty">${esc(PX_EXT.error)}</div>`;return}
+  if(!PX_EXT.items.length){$("#exPanel").innerHTML='<div class="empty">No mods, plugins or personal skills found in ~/.claude</div>';return}
+  renderExt(PX_EXT,"#exPanel");
+}
+async function saveProjectExt(){if(!PX_EXT||!PX_EXT.ok)return closeAll();const r=await api().set_extensions(PX_EXT.path,PX_EXT.state);closeAll();r.ok?toast(r.message):toast(r.error,1)}
+async function openDesktop(){const r=await api().open_desktop();r.ok?toast(r.message):toast(r.error,1)}
 
 /* settings */
 function openSettings(){closeAll();$("#setMin").classList.toggle("on",!!S.settings.minimize_after_open);$("#ovSettings").classList.add("on")}
@@ -516,6 +608,7 @@ function buildPal(){
   const acts=[
     {g:"Actions",t:"New project",s:"Ctrl N",run:openNew},
     ...(S.last?[{g:"Actions",t:"Open last project: "+S.last.name,s:modeLabel(S.last.mode),run:openLast}]:[]),
+    {g:"Actions",t:"Open Claude Desktop",s:"",run:openDesktop},
     {g:"Actions",t:"Refresh token usage",s:"",run:refreshUsage},
     {g:"Actions",t:"Add existing folder",s:"",run:addExisting},
   ];
@@ -543,14 +636,14 @@ function go(v){document.querySelectorAll(".nav").forEach(n=>n.classList.toggle("
 document.querySelectorAll(".nav").forEach(n=>n.onclick=()=>go(n.dataset.view));
 document.querySelectorAll(".chip").forEach(c=>c.onclick=()=>{S.filter=c.dataset.f;document.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===c));renderProjects()});
 $("#filter").oninput=e=>{S.q=e.target.value;renderProjects()};
-function closeAll(){document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("on"));$("#menu").classList.remove("on")}
+function closeAll(){document.querySelectorAll(".overlay").forEach(o=>o.classList.remove("on"));$("#menu").classList.remove("on");if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur()}
 document.addEventListener("keydown",e=>{
   const typing=["INPUT","TEXTAREA"].includes(document.activeElement.tagName);
   if(e.key==="Escape"){closeAll();return}
   if(e.ctrlKey&&e.key.toLowerCase()==="k"){e.preventDefault();openPalette();return}
   if(e.ctrlKey&&e.key.toLowerCase()==="n"){e.preventDefault();openNew();return}
   if(e.ctrlKey&&e.key==="Enter"){e.preventDefault();closeAll();openLast();return}
-  if($("#ovNew").classList.contains("on")&&e.key==="Enter"){createProject();return}
+  if($("#ovNew").classList.contains("on")&&e.key==="Enter"&&!(document.activeElement&&document.activeElement.hasAttribute("data-q"))){createProject();return}
   if(!typing&&!document.querySelector(".overlay.on")&&["1","2","3","4"].includes(e.key))go(["home","projects","sessions","usage"][+e.key-1]);
 });
 window.onShow=()=>load();
@@ -577,7 +670,17 @@ if(location.search.includes("demo")){
     get_state:async()=>({projects,sessions,last:projects[0],default_root:"C:\\Users\\you\\Projects",home:"C:\\Users\\you",settings:{minimize_after_open:true}}),
     get_usage:async()=>({status:"ok",updated:now-40,today:days[6],last7:days,active:{tokens:8.1e6,cost:6.3,start:new Date(Date.now()-2.2*36e5).toISOString(),end:new Date(Date.now()+2.8*36e5).toISOString(),burn:61000,costPerHour:2.9,projection:1.9e7,percent:64}}),
     open_project:async()=>({ok:true,message:"Terminal opened with Claude Code"}),toggle_pin:async()=>true,refresh_usage:async()=>true,open_explorer:async()=>true,
-    browse_folder:async()=>null,new_project:async()=>({ok:true,message:"ok"}),set_mode:async()=>true,rename:async()=>true,hide:async()=>true,set_setting:async()=>true,ui_log:async()=>true,add_existing:async()=>({ok:true})}};
+    browse_folder:async()=>null,new_project:async()=>({ok:true,message:"ok"}),set_mode:async()=>true,rename:async()=>true,hide:async()=>true,set_setting:async()=>true,ui_log:async()=>true,open_desktop:async()=>({ok:true,message:"Claude Desktop opened"}),
+    get_extensions:async(p)=>({ok:true,items:[
+      {kind:"mod",id:"safety-net@inline",name:"safety-net",description:"Asks before risky shell commands and deploys",skills:0,scope:"user",state:true,inherited:true},
+      {kind:"mod",id:"session-panel@inline",name:"session-panel",description:"Side pane with live cost, context and tool activity",skills:0,scope:"user",state:true,inherited:true},
+      {kind:"mod",id:"prompt-polish@inline",name:"prompt-polish",description:"Turns a rough prompt into a structured brief on demand",skills:0,scope:"user",state:false,inherited:true},
+      {kind:"plugin",id:"superpowers@claude-plugins-official",name:"superpowers",description:"Core skills library: TDD, debugging, collaboration patterns",skills:15,scope:"user",state:true,inherited:true},
+      {kind:"plugin",id:"frontend-design@claude-plugins-official",name:"frontend-design",description:"Frontend design skill for UI/UX implementation",skills:1,scope:"user",state:true,inherited:true},
+      {kind:"plugin",id:"big-pack@example",name:"big-pack",description:"Large skill pack for engineering teams",skills:181,scope:"user",state:false,inherited:false},
+      {kind:"skill",id:"skill:brand-kit",name:"brand-kit",description:"Brand guideline boards and logo systems",skills:0,scope:"user",state:true,inherited:true},
+      {kind:"skill",id:"skill:minimalist-ui",name:"minimalist-ui",description:"Clean editorial interfaces with a warm monochrome palette",skills:0,scope:"user",state:true,inherited:true}]}),
+    set_extensions:async()=>({ok:true,message:"Saved"}),save_extension_defaults:async()=>true,add_existing:async()=>({ok:true})}};
   setTimeout(start,0);
 }
 </script>

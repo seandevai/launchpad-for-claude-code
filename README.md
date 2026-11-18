@@ -14,11 +14,13 @@
 - **Recent work.** Launchpad reads your local Claude Code session history, so every project you used Claude Code in shows up automatically, with the first prompt of each conversation as its title.
 - **Resume any conversation.** Click a session to reopen it with `claude --resume`, or use *Resume conversation* to continue the latest one.
 - **New projects in seconds.** Pick a name and a folder; Launchpad can run `git init`, add a starter `CLAUDE.md` and open it straight away.
+- **Per-project extensions.** Before creating a project, or later from its menu, switch your mods, plugins and personal skills on or off for that project only. Launchpad writes the choice to the project's `.claude/settings.local.json` (the documented project-local scope, kept out of git) and never edits your global settings. You can save a selection as the default for new projects.
+- **Claude Desktop in one click.** A sidebar button opens the Claude Desktop app.
 - **Pins, search and shortcuts.** Pin favourites, filter by mode, and use the command palette (<kbd>Ctrl</kbd>+<kbd>K</kbd>) to open anything from the keyboard.
 - **Token usage.** Tokens and estimated cost in the current 5-hour block, burn rate, time until reset, and a 7-day chart.
 
 <p align="center">
-  <img src="assets/screenshot-projects.png" width="49%" alt="Projects view">
+  <img src="assets/screenshot-extensions.png" width="49%" alt="Per-project extensions">
   <img src="assets/screenshot-usage.png" width="49%" alt="Usage view">
 </p>
 
@@ -56,13 +58,14 @@ To uninstall, run **`uninstall.bat`**. It removes the shortcuts and keeps your s
 | <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | Open the last project |
 | <kbd>Ctrl</kbd>+<kbd>N</kbd> | New project |
 | <kbd>1</kbd>–<kbd>4</kbd> | Home, Projects, Sessions, Usage |
-| Right-click a project | More actions: open mode, pin, rename, hide |
+| Right-click a project | More actions: open mode, extensions, pin, rename, hide |
 
 Launching Launchpad again while it is already open brings the existing window to the front.
 
 ## How it works, and your privacy
 
 - **Projects and sessions** come from two places: Claude Code's local history in `~/.claude/projects` (read-only), and Launchpad's own list in `~/.launchpad-cc/state.json`. Launchpad never modifies Claude Code's files.
+- **Extensions** are read from `~/.claude/plugins/installed_plugins.json`, the folders listed in `CLAUDE_CODE_PLUGIN_DIRS` (mods load as `<name>@inline`) and `~/.claude/skills`. Per-project switches use `enabledPlugins` for mods and plugins and `skillOverrides` for personal skills; only values that differ from what the project would inherit are written, and only ids that are actually installed are accepted. Changes apply to the next Claude Code session in that folder (or after `/reload-plugins`). Plugin skills are switched with their plugin, as Claude Code requires.
 - **Opening a project** starts `claude` in a new terminal, inside that folder. Session IDs are validated as UUIDs before they are passed to `claude --resume`. Folder paths are passed as a working directory, never inserted into a shell command.
 - **Claude Desktop** has no command-line option to open a folder. Launchpad opens the app and copies the project path to your clipboard.
 - **Token usage** comes from [ccusage](https://github.com/ryoppippi/ccusage), which reads the same local logs. The version is pinned (`ccusage@20.0.51`) so that a future npm release never runs automatically. These figures are estimates: official plan limits are not exposed, so run `/usage` inside Claude Code for those.
